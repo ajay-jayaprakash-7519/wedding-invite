@@ -87,7 +87,7 @@ export default function RsvpForm() {
 
       <div className="field">
         <textarea id="message" name="message" rows={3} maxLength={500} placeholder=" " />
-        <label htmlFor="message">A message for the couple (optional)</label>
+        <label htmlFor="message">Any requests</label>
       </div>
 
       {/* honeypot — real people never see or fill this */}

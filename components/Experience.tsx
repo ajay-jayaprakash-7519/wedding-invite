@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ringState } from "../lib/ringState";
 import Countdown from "./Countdown";
+import MusicToggle from "./MusicToggle";
 import RsvpForm from "./RsvpForm";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -290,6 +291,7 @@ export default function Experience() {
   return (
     <div ref={root} className={`experience ${live ? "is-live" : ""}`}>
       <Scene />
+      <MusicToggle />
 
       <main className="page">
         {/* 0 — Splash */}
