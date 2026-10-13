@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listRsvps, summarize, type RsvpRow } from "../../lib/rsvps";
+import { describeError } from "../../lib/mongo";
 import InviteTable from "./InviteTable";
 
 export const dynamic = "force-dynamic";
@@ -46,12 +47,12 @@ export default async function InviteListPage({ searchParams }: { searchParams: P
   if (key !== expected) return <Gate message="That key isn't right." />;
 
   let rows: RsvpRow[] = [];
-  let failed = false;
+  let failed = "";
   try {
     rows = await listRsvps();
   } catch (err) {
     console.error("invite-list: read failed", err);
-    failed = true;
+    failed = describeError(err);
   }
   const stats = summarize(rows);
 
@@ -85,7 +86,11 @@ export default async function InviteListPage({ searchParams }: { searchParams: P
       </section>
 
       {failed ? (
-        <p className="il__error">Couldn&apos;t load RSVPs from the database. Check MONGODB_URI and Atlas network access.</p>
+        <p className="il__error">
+          Couldn&apos;t load RSVPs from the database. Check MONGODB_URI and Atlas network access.
+          <br />
+          <small>{failed}</small>
+        </p>
       ) : (
         <InviteTable
           rows={rows.map((r) => ({

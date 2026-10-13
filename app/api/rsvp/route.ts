@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { mongoEnabled, rsvps } from "../../../lib/mongo";
+import { describeError, mongoEnabled, rsvps } from "../../../lib/mongo";
 import { listRsvps, summarize } from "../../../lib/rsvps";
 
 export const runtime = "nodejs";
@@ -98,6 +98,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ...summarize(rows), rows });
   } catch (err) {
     console.error("RSVP: read failed", err);
-    return NextResponse.json({ error: "Could not read RSVPs." }, { status: 500 });
+    // The caller has already proven they hold the admin key, so it's safe to say why.
+    return NextResponse.json({ error: "Could not read RSVPs.", detail: describeError(err) }, { status: 500 });
   }
 }
