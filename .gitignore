@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+data
+.env*.local
+.env
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+
+# Unoptimised source art (site uses public/images/*.jpg)
+public/arch-invite.png
+public/models/wedding_upscaled.png
