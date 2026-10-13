@@ -510,21 +510,17 @@ h1, h2, h3, p, blockquote, dl, dd, figure { margin: 0; }
 .arch__btn:hover { background: var(--gold); border-color: var(--gold); transform: translateY(-2px); }
 
 /* ---------- RSVP ---------- */
-.rsvp {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(2rem, 6vw, 6rem);
-  align-items: center;
-  text-align: left;
-}
-.rsvp__intro { display: flex; flex-direction: column; align-items: flex-start; gap: 0.4rem; order: 2; }
-.rsvp__intro .lede { margin-top: 1rem; }
+.rsvp { justify-content: flex-start; padding-top: clamp(2.5rem, 7vh, 5rem); }
+.rsvp .lede { margin-top: 0.4rem; max-width: 40ch; }
 .rsvp__card {
-  order: 1;
+  width: min(92vw, 660px);
+  margin-top: clamp(2.5rem, 6vw, 4.5rem);
   padding: clamp(1.6rem, 4vw, 3rem);
   border: 1px solid var(--line);
   background: var(--card);
   backdrop-filter: blur(10px);
+  text-align: center;
+  box-shadow: 0 30px 60px -34px rgba(42, 34, 25, 0.35);
 }
 .rsvp__form { display: flex; flex-direction: column; gap: 1.6rem; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; }
@@ -540,6 +536,7 @@ h1, h2, h3, p, blockquote, dl, dd, figure { margin: 0; }
   border-radius: 0;
   color: var(--ink);
   font: 400 1.05rem/1.4 var(--sans);
+  text-align: center;
   outline: none;
   resize: none;
   transition: border-color 0.3s;
@@ -550,6 +547,8 @@ h1, h2, h3, p, blockquote, dl, dd, figure { margin: 0; }
 .field label {
   position: absolute;
   left: 0;
+  right: 0;
+  text-align: center;
   top: 1.35rem;
   font-size: 0.78rem;
   letter-spacing: 0.2em;
@@ -557,7 +556,7 @@ h1, h2, h3, p, blockquote, dl, dd, figure { margin: 0; }
   color: var(--muted);
   pointer-events: none;
   transition: transform 0.3s ease, color 0.3s ease, font-size 0.3s ease;
-  transform-origin: left top;
+  transform-origin: center top;
 }
 .field input:focus + label,
 .field input:not(:placeholder-shown) + label,
@@ -566,11 +565,13 @@ h1, h2, h3, p, blockquote, dl, dd, figure { margin: 0; }
   transform: translateY(-1.15rem) scale(0.82);
   color: var(--gold);
 }
-.field select { padding-top: 0.9rem; cursor: pointer; }
+.field select { padding-top: 0.9rem; cursor: pointer; text-align: center; text-align-last: center; }
 .field select option { background: var(--bg); color: var(--ink); }
 
 .choice { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
 .choice legend {
+  width: 100%;
+  text-align: center;
   padding: 0;
   margin-bottom: 0.9rem;
   font-size: 0.72rem;
@@ -596,8 +597,8 @@ h1, h2, h3, p, blockquote, dl, dd, figure { margin: 0; }
 .choice label:has(input:focus-visible) { outline: 1px solid var(--gold); outline-offset: 3px; }
 
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.rsvp__error { color: #b3392a; font-size: 0.95rem; }
-.rsvp__form .btn { align-self: flex-start; margin-top: 0.4rem; }
+.rsvp__error { color: #b3392a; font-size: 0.95rem; text-align: center; }
+.rsvp__form .btn { align-self: center; margin-top: 0.4rem; }
 
 .rsvp__thanks { text-align: center; padding: 2rem 0; }
 .rsvp__thanks .ornament { font-size: 1.6rem; }
@@ -608,14 +609,10 @@ h1, h2, h3, p, blockquote, dl, dd, figure { margin: 0; }
 @media (max-width: 899px) {
   .families { grid-template-columns: 1fr; gap: 1.6rem; }
   .family__join { order: 0; }
-  .details, .rsvp { grid-template-columns: 1fr; text-align: center; }
   .details__spacer { display: none; }
-  .details__body, .rsvp__intro { align-items: center; }
   .rule--left { margin-left: auto; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
   .facts { justify-content: center; text-align: center; }
   .lede { max-width: 30ch; }
-  .rsvp__intro { order: 1; }
-  .rsvp__card { order: 2; text-align: left; }
   .hero { padding-bottom: clamp(4.5rem, 12vh, 7rem); }
 }
 @media (max-width: 520px) {

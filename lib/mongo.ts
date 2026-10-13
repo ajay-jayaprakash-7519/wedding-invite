@@ -20,7 +20,14 @@ export const mongoEnabled = Boolean(uri);
 /** Short, credential-free description of a connection error — only ever shown behind the admin key. */
 export function describeError(err: unknown): string {
   const e = err as { name?: string; message?: string };
-  return `${e?.name ?? "Error"}: ${(e?.message ?? String(err)).split("\n")[0].slice(0, 300)}`;
+  const msg = (e?.message ?? String(err)).split("\n")[0].slice(0, 300);
+  let hint = "";
+  if (/SSL alert number 80|whitelist|not allowed|IP that isn't/i.test(msg))
+    hint = " → Atlas is rejecting this server's IP. In Atlas: Network Access → Add IP Address → Allow access from anywhere (0.0.0.0/0), in the same project as this cluster.";
+  else if (/bad auth|authentication failed/i.test(msg))
+    hint = " → Wrong database username/password in MONGODB_URI (special characters in the password must be URL-encoded).";
+  else if (/ENOTFOUND|querySrv/i.test(msg)) hint = " → The cluster host in MONGODB_URI can't be found; re-copy the connection string from Atlas.";
+  return `${e?.name ?? "Error"}: ${msg}${hint}`;
 }
 
 // Reuse one connection across hot reloads (dev) and warm serverless invocations.

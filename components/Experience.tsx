@@ -219,6 +219,14 @@ export default function Experience() {
           .fromTo(img, { scale: 1.18 }, { scale: 1, duration: 2.2, ease: "power3.out" }, 0)
           .fromTo(lines, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1, stagger: 0.12, ease: "power2.out" }, 0.9);
       });
+      const rsvpCard = q(".rsvp__card")[0];
+      if (rsvpCard) {
+        const parts = rsvpCard.querySelectorAll(".rsvp__form > *");
+        gsap
+          .timeline({ scrollTrigger: { trigger: rsvpCard, start: "top 82%", once: true } })
+          .fromTo(rsvpCard, { clipPath: "inset(100% 0% 0% 0%)", y: 40 }, { clipPath: "inset(0% 0% 0% 0%)", y: 0, duration: 1.6, ease: "power3.inOut" }, 0)
+          .fromTo(parts, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1, stagger: 0.1, ease: "power2.out" }, 0.9);
+      }
       gsap.utils.toArray<HTMLElement>(".rule").forEach((el) => {
         gsap.fromTo(
           el,
@@ -465,16 +473,14 @@ export default function Experience() {
 
         {/* 5 — RSVP */}
         <section id="rsvp" className="section rsvp">
-          <div className="rsvp__intro">
-            <p className="eyebrow reveal">Kindly reply</p>
-            <h2 className="heading reveal">RSVP</h2>
-            <div className="rule rule--left" />
-            <p className="lede reveal">
-              Let us know if you can make it so we can save you a seat. Your presence is the greatest gift we could ask
-              for.
-            </p>
-          </div>
-          <div className="rsvp__card reveal">
+          <p className="eyebrow reveal">Kindly reply</p>
+          <h2 className="heading reveal">RSVP</h2>
+          <div className="rule" />
+          <p className="lede reveal">
+            Let us know if you can make it so we can save you a seat. Your presence is the greatest gift we could ask
+            for.
+          </p>
+          <div className="rsvp__card">
             <RsvpForm />
           </div>
         </section>
