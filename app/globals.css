@@ -748,7 +748,39 @@ h1, h2, h3, p, blockquote, dl, dd, figure { margin: 0; }
 }
 .sound:hover { transform: scale(1.08); background: rgba(24, 19, 14, 0.75); border-color: #fff; }
 .sound:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.sound.is-off { color: rgba(255, 255, 255, 0.8); }
+.sound.is-off, .sound.is-pending { color: rgba(255, 255, 255, 0.85); }
+/* should be playing but needs a tap first — nudge them */
+.sound.is-pending::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  animation: soundRing 1.6s ease-out infinite;
+  pointer-events: none;
+}
+.sound__hint {
+  position: fixed;
+  left: calc(max(1rem, env(safe-area-inset-left)) + 58px);
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 60;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-radius: 99px;
+  background: rgba(24, 19, 14, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font: 500 0.66rem / 1 var(--sans);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: hintIn 0.8s ease 1s both;
+}
+@keyframes hintIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
 .sound.is-on::after {
   content: "";
   position: absolute;

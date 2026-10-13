@@ -5,15 +5,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const SRC = "/bg-music.mp3";
 const VOLUME = 0.45;
 const FADE_MS = 1200;
-const STORAGE_KEY = "wedding-sound"; // "off" once the guest has muted it
+const STORAGE_KEY = "wedding-sound"; // "off" once a guest has muted it themselves
+
+// "on"      – playing with sound
+// "pending" – music is meant to be on, but the browser won't allow sound until the visitor
+//             interacts; the next click / tap / key press starts it
+// "off"     – the guest turned it off
+type Mode = "on" | "pending" | "off";
+
+// Everything a browser may treat as a "real" gesture (Safari and Chrome disagree on which events count)
+const GESTURES = ["pointerdown", "pointerup", "mousedown", "mouseup", "click", "touchstart", "touchend", "keydown"] as const;
 
 export default function MusicToggle() {
   const audio = useRef<HTMLAudioElement>(null);
   const raf = useRef(0);
-  const wanted = useRef(true); // does the guest want sound? (false once they switch it off)
+  const wanted = useRef(true); // music is on by default; false only after the guest mutes it
+  const starting = useRef(false);
+  const attempt = useRef(0); // newest play attempt wins; older ones must not touch state
+  const ourPause = useRef(false); // distinguishes our own pause() from the browser pausing it behind our back
   const resumeOnShow = useRef(false);
-  const starting = useRef(false); // a play() call is in flight
-  const [playing, setPlaying] = useState(false);
+  const [mode, setMode] = useState<Mode>("pending");
 
   const rampTo = useCallback((target: number, done?: () => void) => {
     const el = audio.current;
@@ -24,7 +35,7 @@ export default function MusicToggle() {
     const step = (now: number) => {
       const k = Math.min(1, (now - t0) / FADE_MS);
       try {
-        el.volume = from + (target - from) * k; // read-only on iOS Safari — just plays at full volume there
+        el.volume = from + (target - from) * k; // read-only on iOS Safari — plays at full volume there
       } catch {
         /* ignore */
       }
@@ -34,9 +45,18 @@ export default function MusicToggle() {
     raf.current = requestAnimationFrame(step);
   }, []);
 
-  const start = useCallback(async () => {
+  const pauseOurselves = useCallback(() => {
+    const el = audio.current;
+    if (!el || el.paused) return;
+    ourPause.current = true;
+    el.pause();
+  }, []);
+
+  /** Start playing with sound. Browsers that require a gesture reject this unless it runs inside one. */
+  const makeAudible = useCallback(async () => {
     const el = audio.current;
     if (!el) return false;
+    const id = ++attempt.current;
     try {
       el.volume = 0;
     } catch {
@@ -44,21 +64,16 @@ export default function MusicToggle() {
     }
     starting.current = true;
     try {
-      await el.play();
-      setPlaying(true);
+      if (el.paused) await el.play();
+      if (id !== attempt.current) return false; // superseded by a newer attempt
+      setMode("on");
       rampTo(VOLUME);
       return true;
     } catch {
-      setPlaying(false); // blocked until the guest interacts with the page
-      return false;
+      return false; // blocked — needs a gesture
     } finally {
       starting.current = false;
     }
-  }, [rampTo]);
-
-  const stop = useCallback(() => {
-    setPlaying(false);
-    rampTo(0, () => audio.current?.pause());
   }, [rampTo]);
 
   useEffect(() => {
@@ -69,57 +84,83 @@ export default function MusicToggle() {
     }
     const el = audio.current;
     if (!el) return;
+    let cancelled = false; // React runs effects twice in dev — the first run's callbacks must do nothing
 
     // Fetch the track once the page itself has settled, so it never competes with the photo / 3D model.
-    const preload = () => {
-      if (!el.paused || starting.current) return; // already playing (or about to) — load() would reset it
+    const idle = window.setTimeout(() => {
+      if (!el.paused || starting.current) return; // already playing — load() would reset it
       el.preload = "auto";
       el.load();
-    };
-    const idle = window.setTimeout(preload, 2500);
+    }, 2500);
 
-    // Browsers only allow sound after a real gesture, so start on the first one (unless it was muted).
-    const events = ["pointerdown", "keydown", "touchend"] as const;
     const onGesture = (e: Event) => {
       if ((e.target as Element | null)?.closest?.("[data-sound-toggle]")) return; // the button handles itself
-      if (wanted.current && el.paused) void start();
-      cleanup();
+      if (!wanted.current || cancelled) return;
+      void makeAudible().then((ok) => ok && !cancelled && detach()); // keeps retrying on later gestures until it works
     };
-    const cleanup = () => events.forEach((n) => window.removeEventListener(n, onGesture, true));
-    events.forEach((n) => window.addEventListener(n, onGesture, true));
-    // Some browsers (and returning visitors) allow it straight away
-    if (wanted.current) void start().then((ok) => ok && cleanup());
+    const attach = () => GESTURES.forEach((n) => window.addEventListener(n, onGesture, true));
+    const detach = () => GESTURES.forEach((n) => window.removeEventListener(n, onGesture, true));
+
+    // Some browsers pause media on their own (autoplay rules) even after play() succeeded
+    const onPause = () => {
+      if (ourPause.current) {
+        ourPause.current = false;
+        return;
+      }
+      if (cancelled || !wanted.current || document.hidden) return;
+      setMode("pending");
+      attach();
+    };
+    el.addEventListener("pause", onPause);
 
     // Don't keep playing in a hidden tab
     const onVisibility = () => {
       if (document.hidden) {
         resumeOnShow.current = !el.paused;
-        el.pause();
+        pauseOurselves();
       } else if (resumeOnShow.current && wanted.current) {
         resumeOnShow.current = false;
-        void el.play().catch(() => setPlaying(false));
+        void el.play().catch(() => {
+          setMode("pending");
+          attach();
+        });
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
+    // On by default: try straight away; if the browser says no, wait for the first gesture
+    if (wanted.current) {
+      attach();
+      void makeAudible().then((ok) => {
+        if (cancelled) return;
+        if (ok) detach();
+        else setMode("pending");
+      });
+    } else {
+      setMode("off");
+    }
+
     return () => {
+      cancelled = true;
       window.clearTimeout(idle);
       cancelAnimationFrame(raf.current);
-      cleanup();
+      detach();
+      el.removeEventListener("pause", onPause);
       document.removeEventListener("visibilitychange", onVisibility);
-      el.pause();
+      pauseOurselves();
     };
-  }, [start]);
+  }, [makeAudible, pauseOurselves]);
 
   const toggle = () => {
-    if (playing) {
+    if (mode === "on") {
       wanted.current = false;
       try {
         localStorage.setItem(STORAGE_KEY, "off");
       } catch {
         /* ignore */
       }
-      stop();
+      setMode("off");
+      rampTo(0, pauseOurselves);
     } else {
       wanted.current = true;
       try {
@@ -127,25 +168,31 @@ export default function MusicToggle() {
       } catch {
         /* ignore */
       }
-      void start();
+      void makeAudible().then((ok) => !ok && setMode("pending"));
     }
   };
 
+  const on = mode === "on";
   return (
     <>
       <audio ref={audio} src={SRC} loop preload="none" />
+      {mode === "pending" && (
+        <span className="sound__hint" aria-hidden="true">
+          Tap for sound
+        </span>
+      )}
       <button
         type="button"
-        className={`sound ${playing ? "is-on" : "is-off"}`}
+        className={`sound is-${mode}`}
         data-sound-toggle
         onClick={toggle}
-        aria-pressed={playing}
-        aria-label={playing ? "Turn sound off" : "Turn sound on"}
-        title={playing ? "Sound on — click to mute" : "Sound off — click to play"}
+        aria-pressed={on}
+        aria-label={on ? "Turn sound off" : "Turn sound on"}
+        title={on ? "Sound on — click to mute" : "Sound off — click to turn on"}
       >
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M4 9.5v5h3.6L12.5 19V5L7.6 9.5H4Z" fill="currentColor" stroke="none" />
-          {playing ? (
+          {on ? (
             <>
               <path className="sound__w1" d="M15.6 9.2a4 4 0 0 1 0 5.6" />
               <path className="sound__w2" d="M18.2 6.8a7.4 7.4 0 0 1 0 10.4" />
